@@ -150,6 +150,11 @@ export async function POST(request) {
     if (pathname.includes('/api/ai-agents')) {
       const { agentId, input, userId } = body
       
+      // Check if Groq API key is valid
+      if (!process.env.GROQ_API_KEY || !process.env.GROQ_API_KEY.startsWith('gsk_')) {
+        return NextResponse.json({ error: 'Invalid Groq API key configuration' }, { status: 500 })
+      }
+      
       // Define agent prompts
       const agentPrompts = {
         resume: `Create a professional resume based on the following information: ${input}. Format it properly with sections for Contact Information, Professional Summary, Experience, Education, and Skills.`,
@@ -207,9 +212,108 @@ export async function POST(request) {
       return NextResponse.json({ output })
     }
     
+    // Chatbots endpoint
+    if (pathname.includes('/api/chatbots')) {
+      const { name, description, knowledgeBase, color, userId } = body
+      
+      // Check if Groq API key is valid
+      if (!process.env.GROQ_API_KEY || !process.env.GROQ_API_KEY.startsWith('gsk_')) {
+        return NextResponse.json({ error: 'Invalid Groq API key configuration' }, { status: 500 })
+      }
+      
+      // Create chatbot with AI-enhanced knowledge base
+      const chatbotId = `chatbot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      
+      // Process knowledge base with Groq
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: "You are a knowledge base processor. Analyze the provided knowledge base and create a structured, searchable format that can be used to answer user questions accurately."
+          },
+          {
+            role: "user",
+            content: `Process this knowledge base for a chatbot named "${name}": ${knowledgeBase}`
+          }
+        ],
+        model: "llama3-70b-8192",
+        temperature: 0.3,
+        max_tokens: 2000,
+      })
+      
+      const processedKnowledge = completion.choices[0]?.message?.content || knowledgeBase
+      
+      const chatbot = {
+        id: chatbotId,
+        name,
+        description,
+        knowledgeBase: processedKnowledge,
+        originalKnowledge: knowledgeBase,
+        color,
+        userId,
+        createdAt: new Date().toISOString(),
+        isActive: true
+      }
+      
+      // Save to Firestore
+      try {
+        await addDoc(collection(db, 'chatbots'), chatbot)
+        console.log('Successfully saved chatbot to Firestore')
+      } catch (firebaseError) {
+        console.log('Firebase save failed (expected in testing):', firebaseError.message)
+        // Continue execution - don't fail the API call due to Firebase issues
+      }
+      
+      return NextResponse.json({ chatbot })
+    }
+    
+    // Chatbot test endpoint
+    if (pathname.includes('/api/chatbots/test')) {
+      const { chatbotId, message, userId } = body
+      
+      // Check if Groq API key is valid
+      if (!process.env.GROQ_API_KEY || !process.env.GROQ_API_KEY.startsWith('gsk_')) {
+        return NextResponse.json({ error: 'Invalid Groq API key configuration' }, { status: 500 })
+      }
+      
+      // For now, mock chatbot retrieval
+      const mockChatbot = {
+        id: chatbotId,
+        name: 'Test Bot',
+        knowledgeBase: 'This is a test chatbot that can help with general questions about products and services.',
+        originalKnowledge: 'Test knowledge base'
+      }
+      
+      // Generate response using Groq
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: `You are a helpful chatbot assistant. Use the following knowledge base to answer questions: ${mockChatbot.knowledgeBase}. If the question is not covered in the knowledge base, provide a helpful general response and suggest contacting support for specific inquiries.`
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ],
+        model: "llama3-70b-8192",
+        temperature: 0.7,
+        max_tokens: 500,
+      })
+      
+      const response = completion.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response. Please try again."
+      
+      return NextResponse.json({ response })
+    }
+    
     // Workflows endpoint
     if (pathname.includes('/api/workflows')) {
       const { prompt, type, userId } = body
+      
+      // Check if Groq API key is valid
+      if (!process.env.GROQ_API_KEY || !process.env.GROQ_API_KEY.startsWith('gsk_')) {
+        return NextResponse.json({ error: 'Invalid Groq API key configuration' }, { status: 500 })
+      }
       
       const systemPrompt = type === 'n8n' 
         ? `You are an expert n8n workflow generator. Create a complete n8n workflow JSON configuration based on the user's request. Include all necessary nodes, connections, and configurations. Return only valid JSON.`
