@@ -3,15 +3,20 @@ import { db } from '@/lib/firebase'
 import { collection, addDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
 import Groq from 'groq-sdk'
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-})
-
 // Debug: Log environment variables (remove in production)
 console.log('Environment check:', {
   hasGroqKey: !!process.env.GROQ_API_KEY,
   hasProductHuntToken: !!process.env.PRODUCTHUNT_DEVELOPER_TOKEN,
   groqKeyPrefix: process.env.GROQ_API_KEY?.substring(0, 10)
+})
+
+// Check for valid API key
+if (!process.env.GROQ_API_KEY || !process.env.GROQ_API_KEY.startsWith('gsk_')) {
+  console.error('Invalid or missing GROQ_API_KEY')
+}
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 })
 
 // Helper function to fetch from Product Hunt
