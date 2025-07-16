@@ -48,7 +48,7 @@ import {
   Lightbulb,
   Target,
   Wand2,
-  Fire,
+  Flame,
   Crown,
   Trophy,
   Plus,
