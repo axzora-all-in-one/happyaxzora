@@ -15,7 +15,7 @@ console.log('Environment check:', {
 })
 
 // Helper function to fetch from Product Hunt
-async function fetchFromProductHunt(endpoint) {
+async function fetchFromProductHunt() {
   const response = await fetch(`https://api.producthunt.com/v2/api/graphql`, {
     method: 'POST',
     headers: {
@@ -26,7 +26,7 @@ async function fetchFromProductHunt(endpoint) {
     body: JSON.stringify({
       query: `
         query {
-          posts(first: 50, order: VOTES, postedAfter: "${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}") {
+          posts(first: 50, order: VOTES, postedAfter: "${new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}") {
             edges {
               node {
                 id
@@ -35,6 +35,8 @@ async function fetchFromProductHunt(endpoint) {
                 description
                 url
                 votesCount
+                createdAt
+                featuredAt
                 topics {
                   edges {
                     node {
