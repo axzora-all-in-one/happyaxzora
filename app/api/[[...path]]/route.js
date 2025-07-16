@@ -212,7 +212,46 @@ export async function POST(request) {
       return NextResponse.json({ output })
     }
     
-    // Chatbots endpoint
+    // Chatbot test endpoint - CHECK THIS FIRST before general chatbots endpoint
+    if (pathname.includes('/api/chatbots/test')) {
+      const { chatbotId, message, userId } = body
+      
+      // Check if Groq API key is valid
+      if (!process.env.GROQ_API_KEY || !process.env.GROQ_API_KEY.startsWith('gsk_')) {
+        return NextResponse.json({ error: 'Invalid Groq API key configuration' }, { status: 500 })
+      }
+      
+      // For now, mock chatbot retrieval
+      const mockChatbot = {
+        id: chatbotId,
+        name: 'Test Bot',
+        knowledgeBase: 'This is a test chatbot that can help with general questions about products and services.',
+        originalKnowledge: 'Test knowledge base'
+      }
+      
+      // Generate response using Groq
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: `You are a helpful chatbot assistant. Use the following knowledge base to answer questions: ${mockChatbot.knowledgeBase}. If the question is not covered in the knowledge base, provide a helpful general response and suggest contacting support for specific inquiries.`
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ],
+        model: "llama3-70b-8192",
+        temperature: 0.7,
+        max_tokens: 500,
+      })
+      
+      const response = completion.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response. Please try again."
+      
+      return NextResponse.json({ response })
+    }
+    
+    // Chatbots endpoint - for creating chatbots
     if (pathname.includes('/api/chatbots')) {
       const { name, description, knowledgeBase, color, userId } = body
       
@@ -265,45 +304,6 @@ export async function POST(request) {
       }
       
       return NextResponse.json({ chatbot })
-    }
-    
-    // Chatbot test endpoint
-    if (pathname.includes('/api/chatbots/test')) {
-      const { chatbotId, message, userId } = body
-      
-      // Check if Groq API key is valid
-      if (!process.env.GROQ_API_KEY || !process.env.GROQ_API_KEY.startsWith('gsk_')) {
-        return NextResponse.json({ error: 'Invalid Groq API key configuration' }, { status: 500 })
-      }
-      
-      // For now, mock chatbot retrieval
-      const mockChatbot = {
-        id: chatbotId,
-        name: 'Test Bot',
-        knowledgeBase: 'This is a test chatbot that can help with general questions about products and services.',
-        originalKnowledge: 'Test knowledge base'
-      }
-      
-      // Generate response using Groq
-      const completion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: `You are a helpful chatbot assistant. Use the following knowledge base to answer questions: ${mockChatbot.knowledgeBase}. If the question is not covered in the knowledge base, provide a helpful general response and suggest contacting support for specific inquiries.`
-          },
-          {
-            role: "user",
-            content: message
-          }
-        ],
-        model: "llama3-70b-8192",
-        temperature: 0.7,
-        max_tokens: 500,
-      })
-      
-      const response = completion.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response. Please try again."
-      
-      return NextResponse.json({ response })
     }
     
     // Workflows endpoint
