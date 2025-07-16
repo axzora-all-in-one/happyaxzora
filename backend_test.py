@@ -683,7 +683,7 @@ class BackendTester:
     
     def run_all_tests(self):
         """Run all backend tests"""
-        print(f"Starting HappyAxzora Backend API Tests")
+        print(f"Starting Enhanced HappyAxzora Backend API Tests")
         print(f"Base URL: {BASE_URL}")
         print(f"API Base: {API_BASE}")
         print("=" * 60)
@@ -693,6 +693,9 @@ class BackendTester:
         self.test_ai_tools_endpoint()
         self.test_ai_agents_endpoint()
         self.test_workflows_endpoint()
+        self.test_chatbot_create_endpoint()
+        self.test_chatbot_list_endpoint()
+        self.test_chatbot_test_endpoint()
         self.test_error_handling()
         
         # Print summary
