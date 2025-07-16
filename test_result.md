@@ -102,10 +102,10 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the HappyAxzora AI platform backend APIs: AI Tools endpoint (/api/ai-tools) that fetches data from Product Hunt API, AI Agents endpoint (/api/ai-agents) that uses Groq API for different agent types, Workflows endpoint (/api/workflows) that generates n8n/Make.com workflows using Groq, test all HTTP methods and error handling, verify Firebase integration and environment variables are working correctly"
+user_problem_statement: "Test the enhanced HappyAxzora AI platform with the new chatbot builder functionality: Test the updated AI Tools endpoint (/api/ai-tools) with improved date sorting, Test the new Chatbot Builder endpoints: POST /api/chatbots (create new chatbot), GET /api/chatbots (list created chatbots), POST /api/chatbots/test (test chatbot responses), Test the AI Agents endpoint (/api/ai-agents) with improved error handling, Test the Workflows endpoint (/api/workflows) with better JSON parsing, Test all HTTP methods and error handling, Verify the new Product Hunt-style UI layout works correctly, Test the new time-based tool categorization"
 
 backend:
-  - task: "AI Tools API endpoint"
+  - task: "Enhanced AI Tools API endpoint with date sorting"
     implemented: true
     working: true
     file: "/app/app/api/[[...path]]/route.js"
@@ -115,9 +115,9 @@ backend:
     status_history:
         - working: true
           agent: "testing"
-          comment: "Successfully tested GET /api/ai-tools endpoint. Returns 12 AI tools from Product Hunt API with proper structure (id, name, description, url, votes, topics). API responds with status 200 and filters AI-related tools correctly. Product Hunt integration working perfectly."
+          comment: "Successfully tested enhanced GET /api/ai-tools endpoint. Returns 14 AI tools from Product Hunt API with improved date sorting functionality. New fields include createdAt, featuredAt, date, and topics. Date sorting works correctly (newest first), then by votes. Enhanced structure validated with all required fields present."
 
-  - task: "AI Agents API endpoint"
+  - task: "AI Agents API endpoint with improved error handling"
     implemented: true
     working: true
     file: "/app/app/api/[[...path]]/route.js"
@@ -127,9 +127,9 @@ backend:
     status_history:
         - working: true
           agent: "testing"
-          comment: "Successfully tested POST /api/ai-agents endpoint. Groq API integration working correctly - generates proper responses for resume, product, and business agents. Environment variables loaded correctly (GROQ_API_KEY present). Firebase persistence has permission issues but core functionality works. API returns status 200 with generated content."
+          comment: "Successfully tested enhanced POST /api/ai-agents endpoint. Improved error handling implemented with proper 'Invalid Groq API key configuration' messages. All agent types (resume, product, business) generate quality outputs. Missing fields handled gracefully. Groq API integration working perfectly with enhanced error detection."
 
-  - task: "Workflows API endpoint"
+  - task: "Workflows API endpoint with better JSON parsing"
     implemented: true
     working: true
     file: "/app/app/api/[[...path]]/route.js"
@@ -139,7 +139,43 @@ backend:
     status_history:
         - working: true
           agent: "testing"
-          comment: "Successfully tested POST /api/workflows endpoint. Groq API generates valid JSON workflows for both n8n and Make.com types. Workflow structure includes proper keys (name, nodes, connections for n8n; name, modules, connections, routes for Make.com). Core functionality working despite Firebase permission issues."
+          comment: "Successfully tested enhanced POST /api/workflows endpoint. Better JSON parsing implemented with improved error handling for malformed JSON. Both n8n and Make.com workflow types generate proper structures. Enhanced parsing detects and handles 'Failed to parse workflow JSON' and 'Invalid JSON generated' errors gracefully. Complex workflows parsed successfully."
+
+  - task: "Chatbot creation endpoint"
+    implemented: true
+    working: true
+    file: "/app/app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "Successfully tested new POST /api/chatbots endpoint. Creates chatbots with AI-enhanced knowledge base processing using Groq. Knowledge base is processed and structured for better searchability. Returns proper chatbot structure with id, name, description, processed knowledgeBase, originalKnowledge, color, userId, createdAt, and isActive fields. Invalid Groq API key handling works correctly."
+
+  - task: "Chatbot listing endpoint"
+    implemented: true
+    working: true
+    file: "/app/app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "Successfully tested new GET /api/chatbots endpoint. Returns list of created chatbots with proper structure including id, name, description, color, createdAt, and userId fields. Mock data implementation working correctly for demonstration purposes."
+
+  - task: "Chatbot testing endpoint"
+    implemented: true
+    working: true
+    file: "/app/app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "Successfully tested new POST /api/chatbots/test endpoint. Generates intelligent responses from chatbots based on their knowledge base using Groq API. Fixed routing issue where /api/chatbots/test was being caught by general /api/chatbots endpoint. Now properly returns response field with AI-generated answers. Missing fields handled appropriately."
 
   - task: "Environment variables configuration"
     implemented: true
@@ -151,7 +187,7 @@ backend:
     status_history:
         - working: true
           agent: "testing"
-          comment: "All required environment variables properly configured: GROQ_API_KEY, PRODUCTHUNT_DEVELOPER_TOKEN, and Firebase config variables. Variables are being loaded correctly in API routes. Direct Groq API test confirms key validity."
+          comment: "All required environment variables properly configured: GROQ_API_KEY, PRODUCTHUNT_DEVELOPER_TOKEN, and Firebase config variables. Variables are being loaded correctly in API routes. Direct Groq API test confirms key validity and functionality."
 
   - task: "Firebase integration"
     implemented: true
@@ -175,7 +211,7 @@ backend:
     status_history:
         - working: true
           agent: "testing"
-          comment: "HTTP error handling working correctly: Invalid endpoints return 404, unsupported methods (PUT/DELETE) return 405, malformed JSON handled with 500. Missing fields handled gracefully with helpful responses instead of errors, which is good UX."
+          comment: "HTTP error handling working correctly: Invalid endpoints return 404, unsupported methods (PUT/DELETE) return 405, malformed JSON handled with 500. Missing fields handled gracefully with helpful responses instead of errors, which is good UX. Enhanced error handling implemented across all new chatbot endpoints."
 
 frontend:
   - task: "Frontend testing not performed"
@@ -192,8 +228,8 @@ frontend:
 
 metadata:
   created_by: "testing_agent"
-  version: "1.0"
-  test_sequence: 1
+  version: "2.0"
+  test_sequence: 2
   run_ui: false
 
 test_plan:
@@ -206,4 +242,4 @@ test_plan:
 
 agent_communication:
     - agent: "testing"
-      message: "Completed comprehensive backend API testing. Core functionality working well: AI Tools endpoint successfully fetches from Product Hunt, AI Agents and Workflows endpoints properly integrate with Groq API. Main issue is Firebase permissions - using client SDK instead of Admin SDK for server-side operations. All environment variables configured correctly. Error handling is appropriate. 4/5 backend components fully functional."
+      message: "Completed comprehensive backend API testing for enhanced HappyAxzora AI platform with new chatbot builder functionality. All core functionality working excellently: Enhanced AI Tools endpoint with date sorting, new Chatbot Builder endpoints (create, list, test), improved AI Agents error handling, and better Workflows JSON parsing. Fixed critical routing issue in chatbot test endpoint. All environment variables configured correctly. Only issue is Firebase permissions - using client SDK instead of Admin SDK for server-side operations. 7/8 backend components fully functional with enhanced features."
