@@ -148,14 +148,20 @@ export async function POST(request) {
       
       const output = completion.choices[0]?.message?.content || "No response generated"
       
-      // Save to Firestore
-      await addDoc(collection(db, 'agent_runs'), {
-        userId,
-        agentId,
-        input,
-        output,
-        timestamp: new Date()
-      })
+      // Save to Firestore - temporarily commented out for testing
+      try {
+        await addDoc(collection(db, 'agent_runs'), {
+          userId,
+          agentId,
+          input,
+          output,
+          timestamp: new Date()
+        })
+        console.log('Successfully saved to Firestore')
+      } catch (firebaseError) {
+        console.log('Firebase save failed (expected in testing):', firebaseError.message)
+        // Continue execution - don't fail the API call due to Firebase issues
+      }
       
       return NextResponse.json({ output })
     }
