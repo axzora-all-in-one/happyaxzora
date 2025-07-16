@@ -7,6 +7,13 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 })
 
+// Debug: Log environment variables (remove in production)
+console.log('Environment check:', {
+  hasGroqKey: !!process.env.GROQ_API_KEY,
+  hasProductHuntToken: !!process.env.PRODUCTHUNT_DEVELOPER_TOKEN,
+  groqKeyPrefix: process.env.GROQ_API_KEY?.substring(0, 10)
+})
+
 // Helper function to fetch from Product Hunt
 async function fetchFromProductHunt(endpoint) {
   const response = await fetch(`https://api.producthunt.com/v2/api/graphql`, {
