@@ -115,6 +115,23 @@ export async function GET(request) {
       return NextResponse.json({ tools })
     }
     
+    // Chatbots endpoint
+    if (pathname.includes('/api/chatbots')) {
+      // Mock chatbots data for now
+      const chatbots = [
+        {
+          id: 'bot_1',
+          name: 'Support Bot',
+          description: 'Customer support chatbot',
+          color: '#6366f1',
+          createdAt: new Date().toISOString(),
+          userId: 'demo_user'
+        }
+      ]
+      
+      return NextResponse.json({ chatbots })
+    }
+    
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
     
   } catch (error) {
