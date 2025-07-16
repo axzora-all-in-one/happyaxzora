@@ -78,7 +78,10 @@ export async function GET(request) {
             topic.includes('ai') || 
             topic.includes('artificial intelligence') || 
             topic.includes('machine learning') ||
-            topic.includes('automation')
+            topic.includes('automation') ||
+            topic.includes('chatbot') ||
+            topic.includes('neural') ||
+            topic.includes('deep learning')
           )
         })
         .map(edge => ({
@@ -87,8 +90,22 @@ export async function GET(request) {
           description: edge.node.tagline || edge.node.description,
           url: edge.node.url,
           votes: edge.node.votesCount,
-          topics: edge.node.topics.edges.map(t => t.node.name)
+          topics: edge.node.topics.edges.map(t => t.node.name),
+          createdAt: edge.node.createdAt,
+          featuredAt: edge.node.featuredAt,
+          date: edge.node.featuredAt || edge.node.createdAt
         }))
+        .sort((a, b) => {
+          // Sort by date first (newest first), then by votes
+          const dateA = new Date(a.date || a.createdAt)
+          const dateB = new Date(b.date || b.createdAt)
+          
+          if (dateA.getTime() !== dateB.getTime()) {
+            return dateB.getTime() - dateA.getTime()
+          }
+          
+          return (b.votes || 0) - (a.votes || 0)
+        })
       
       return NextResponse.json({ tools })
     }
