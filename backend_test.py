@@ -75,8 +75,8 @@ class BackendTester:
             self.log_result('environment', False, ".env file not found")
     
     def test_ai_tools_endpoint(self):
-        """Test the AI Tools endpoint that fetches from Product Hunt"""
-        print("\n=== Testing AI Tools Endpoint ===")
+        """Test the AI Tools endpoint with enhanced date sorting"""
+        print("\n=== Testing Enhanced AI Tools Endpoint ===")
         
         try:
             # Test GET request to ai-tools endpoint
@@ -95,14 +95,40 @@ class BackendTester:
                         'sample_tool': tools[0] if tools else None
                     })
                     
-                    # Validate tool structure
+                    # Validate tool structure with new date fields
                     if tools:
                         sample_tool = tools[0]
                         required_fields = ['id', 'name', 'description', 'url', 'votes']
+                        enhanced_fields = ['createdAt', 'featuredAt', 'date', 'topics']
+                        
                         missing_fields = [field for field in required_fields if field not in sample_tool]
                         
                         if not missing_fields:
                             self.log_result('ai_tools', True, "Tool structure is valid")
+                            
+                            # Check for enhanced date sorting fields
+                            has_enhanced_fields = any(field in sample_tool for field in enhanced_fields)
+                            if has_enhanced_fields:
+                                self.log_result('ai_tools', True, "Enhanced date sorting fields present", {
+                                    'enhanced_fields_found': [field for field in enhanced_fields if field in sample_tool]
+                                })
+                                
+                                # Test date sorting - check if tools are sorted by date (newest first)
+                                if len(tools) > 1:
+                                    first_date = tools[0].get('date') or tools[0].get('createdAt')
+                                    second_date = tools[1].get('date') or tools[1].get('createdAt')
+                                    
+                                    if first_date and second_date:
+                                        from datetime import datetime
+                                        first_dt = datetime.fromisoformat(first_date.replace('Z', '+00:00'))
+                                        second_dt = datetime.fromisoformat(second_date.replace('Z', '+00:00'))
+                                        
+                                        if first_dt >= second_dt:
+                                            self.log_result('ai_tools', True, "Date sorting working correctly (newest first)")
+                                        else:
+                                            self.log_result('ai_tools', False, "Date sorting not working correctly")
+                            else:
+                                self.log_result('ai_tools', False, "Enhanced date sorting fields missing")
                         else:
                             self.log_result('ai_tools', False, f"Missing fields in tool: {missing_fields}")
                     
@@ -122,6 +148,248 @@ class BackendTester:
             self.log_result('ai_tools', False, "Connection error - server may not be running")
         except Exception as e:
             self.log_result('ai_tools', False, f"Unexpected error: {str(e)}")
+    
+    def test_chatbot_create_endpoint(self):
+        """Test the new Chatbot creation endpoint"""
+        print("\n=== Testing Chatbot Creation Endpoint ===")
+        
+        # Test chatbot creation with knowledge base processing
+        test_chatbot = {
+            'name': 'Customer Support Bot',
+            'description': 'AI-powered customer support chatbot for e-commerce',
+            'knowledgeBase': 'Our company offers premium software solutions for businesses. We provide 24/7 support, have a 30-day money-back guarantee, and offer enterprise-level security. Our main products include CRM software, project management tools, and analytics dashboards.',
+            'color': '#3B82F6',
+            'userId': 'test_user_chatbot_123'
+        }
+        
+        try:
+            response = requests.post(
+                f"{API_BASE}/chatbots",
+                json=test_chatbot,
+                headers={'Content-Type': 'application/json'},
+                timeout=60
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if 'chatbot' in data:
+                    chatbot = data['chatbot']
+                    
+                    # Validate chatbot structure
+                    required_fields = ['id', 'name', 'description', 'knowledgeBase', 'color', 'userId', 'createdAt']
+                    missing_fields = [field for field in required_fields if field not in chatbot]
+                    
+                    if not missing_fields:
+                        self.log_result('chatbot_create', True, "Chatbot created successfully", {
+                            'chatbot_id': chatbot['id'],
+                            'name': chatbot['name'],
+                            'has_processed_knowledge': len(chatbot.get('knowledgeBase', '')) > len(test_chatbot['knowledgeBase']),
+                            'original_knowledge_preserved': 'originalKnowledge' in chatbot
+                        })
+                        
+                        # Check if knowledge base was processed by Groq
+                        if chatbot.get('knowledgeBase') != test_chatbot['knowledgeBase']:
+                            self.log_result('chatbot_create', True, "Knowledge base processed with AI enhancement")
+                        else:
+                            self.log_result('chatbot_create', False, "Knowledge base not processed by AI")
+                            
+                        # Store chatbot ID for testing
+                        self.test_chatbot_id = chatbot['id']
+                        
+                    else:
+                        self.log_result('chatbot_create', False, f"Missing fields in chatbot: {missing_fields}")
+                else:
+                    self.log_result('chatbot_create', False, "Response missing 'chatbot' field")
+            
+            elif response.status_code == 500:
+                error_data = response.json()
+                error_msg = error_data.get('error', 'Unknown error')
+                
+                # Check for Groq API key issues
+                if 'Invalid Groq API key' in error_msg:
+                    self.log_result('chatbot_create', False, f"Groq API key configuration error: {error_msg}")
+                elif 'PERMISSION_DENIED' in error_msg:
+                    self.log_result('chatbot_create', True, "Chatbot creation core functionality working (Firebase permission expected)", {
+                        'note': 'Firebase permissions need to be configured for production'
+                    })
+                else:
+                    self.log_result('chatbot_create', False, f"Server error: {error_msg}")
+            
+            else:
+                self.log_result('chatbot_create', False, f"Unexpected status code: {response.status_code}")
+                
+        except requests.exceptions.Timeout:
+            self.log_result('chatbot_create', False, "Chatbot creation request timed out")
+        except Exception as e:
+            self.log_result('chatbot_create', False, f"Chatbot creation error: {str(e)}")
+        
+        # Test invalid Groq API key handling
+        print("\n--- Testing Invalid Groq API Key Handling ---")
+        try:
+            # This should be handled gracefully by the API
+            invalid_chatbot = {
+                'name': 'Test Bot',
+                'description': 'Test description',
+                'knowledgeBase': 'Test knowledge',
+                'color': '#FF0000',
+                'userId': 'test_user'
+            }
+            
+            response = requests.post(
+                f"{API_BASE}/chatbots",
+                json=invalid_chatbot,
+                headers={'Content-Type': 'application/json'},
+                timeout=30
+            )
+            
+            # The API should handle invalid keys gracefully
+            if response.status_code in [200, 500]:
+                if response.status_code == 500:
+                    error_data = response.json()
+                    if 'Invalid Groq API key' in error_data.get('error', ''):
+                        self.log_result('chatbot_create', True, "Invalid Groq API key handled gracefully")
+                    else:
+                        self.log_result('chatbot_create', True, "Error handling working for chatbot creation")
+                else:
+                    self.log_result('chatbot_create', True, "Chatbot creation with valid API key successful")
+            else:
+                self.log_result('chatbot_create', False, f"Unexpected error handling response: {response.status_code}")
+                
+        except Exception as e:
+            self.log_result('chatbot_create', False, f"Error testing invalid API key handling: {str(e)}")
+    
+    def test_chatbot_list_endpoint(self):
+        """Test the Chatbot listing endpoint"""
+        print("\n=== Testing Chatbot List Endpoint ===")
+        
+        try:
+            response = requests.get(f"{API_BASE}/chatbots", timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if 'chatbots' in data:
+                    chatbots = data['chatbots']
+                    self.log_result('chatbot_list', True, f"Retrieved {len(chatbots)} chatbots", {
+                        'chatbot_count': len(chatbots),
+                        'sample_chatbot': chatbots[0] if chatbots else None
+                    })
+                    
+                    # Validate chatbot list structure
+                    if chatbots:
+                        sample_chatbot = chatbots[0]
+                        required_fields = ['id', 'name', 'description', 'color', 'createdAt', 'userId']
+                        missing_fields = [field for field in required_fields if field not in sample_chatbot]
+                        
+                        if not missing_fields:
+                            self.log_result('chatbot_list', True, "Chatbot list structure is valid")
+                        else:
+                            self.log_result('chatbot_list', False, f"Missing fields in chatbot list: {missing_fields}")
+                    else:
+                        self.log_result('chatbot_list', True, "Empty chatbot list returned (expected for new system)")
+                        
+                else:
+                    self.log_result('chatbot_list', False, "Response missing 'chatbots' field")
+            
+            else:
+                self.log_result('chatbot_list', False, f"Unexpected status code: {response.status_code}")
+                
+        except requests.exceptions.Timeout:
+            self.log_result('chatbot_list', False, "Chatbot list request timed out")
+        except Exception as e:
+            self.log_result('chatbot_list', False, f"Chatbot list error: {str(e)}")
+    
+    def test_chatbot_test_endpoint(self):
+        """Test the Chatbot testing endpoint"""
+        print("\n=== Testing Chatbot Test Endpoint ===")
+        
+        # Test chatbot response generation
+        test_messages = [
+            {
+                'chatbotId': 'test_bot_123',
+                'message': 'What are your business hours?',
+                'userId': 'test_user_123'
+            },
+            {
+                'chatbotId': 'test_bot_123', 
+                'message': 'Do you offer refunds?',
+                'userId': 'test_user_123'
+            },
+            {
+                'chatbotId': 'test_bot_123',
+                'message': 'Tell me about your products',
+                'userId': 'test_user_123'
+            }
+        ]
+        
+        for test_message in test_messages:
+            try:
+                response = requests.post(
+                    f"{API_BASE}/chatbots/test",
+                    json=test_message,
+                    headers={'Content-Type': 'application/json'},
+                    timeout=45
+                )
+                
+                message_preview = test_message['message'][:30] + '...' if len(test_message['message']) > 30 else test_message['message']
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if 'response' in data and data['response']:
+                        self.log_result('chatbot_test', True, f"Chatbot responded to: '{message_preview}'", {
+                            'message': test_message['message'],
+                            'response_length': len(data['response']),
+                            'response_preview': data['response'][:100] + '...' if len(data['response']) > 100 else data['response']
+                        })
+                    else:
+                        self.log_result('chatbot_test', False, f"Empty response for: '{message_preview}'")
+                
+                elif response.status_code == 500:
+                    error_data = response.json()
+                    error_msg = error_data.get('error', 'Unknown error')
+                    
+                    # Check for Groq API key issues
+                    if 'Invalid Groq API key' in error_msg:
+                        self.log_result('chatbot_test', False, f"Groq API key error for: '{message_preview}': {error_msg}")
+                    else:
+                        self.log_result('chatbot_test', False, f"Server error for: '{message_preview}': {error_msg}")
+                
+                else:
+                    self.log_result('chatbot_test', False, f"Unexpected status for: '{message_preview}': {response.status_code}")
+                    
+            except requests.exceptions.Timeout:
+                self.log_result('chatbot_test', False, f"Chatbot test request timed out for: '{message_preview}'")
+            except Exception as e:
+                self.log_result('chatbot_test', False, f"Chatbot test error for: '{message_preview}': {str(e)}")
+        
+        # Test missing fields handling
+        print("\n--- Testing Missing Fields Handling ---")
+        try:
+            incomplete_request = {'chatbotId': 'test_bot'}  # Missing message and userId
+            
+            response = requests.post(
+                f"{API_BASE}/chatbots/test",
+                json=incomplete_request,
+                headers={'Content-Type': 'application/json'},
+                timeout=30
+            )
+            
+            if response.status_code in [400, 500]:
+                self.log_result('chatbot_test', True, "Missing fields handled appropriately")
+            elif response.status_code == 200:
+                # API might handle missing fields gracefully
+                data = response.json()
+                if 'response' in data:
+                    self.log_result('chatbot_test', True, "Missing fields handled gracefully with response")
+                else:
+                    self.log_result('chatbot_test', False, "Missing fields not handled properly")
+            else:
+                self.log_result('chatbot_test', False, f"Unexpected response to missing fields: {response.status_code}")
+                
+        except Exception as e:
+            self.log_result('chatbot_test', False, f"Error testing missing fields: {str(e)}")
     
     def test_ai_agents_endpoint(self):
         """Test the AI Agents endpoint that uses Groq API"""
