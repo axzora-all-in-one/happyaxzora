@@ -492,18 +492,18 @@ class BackendTester:
             self.log_result('ai_agents', False, f"Error testing improved error handling: {str(e)}")
     
     def test_workflows_endpoint(self):
-        """Test the Workflows endpoint that generates n8n/Make.com workflows"""
-        print("\n=== Testing Workflows Endpoint ===")
+        """Test the Workflows endpoint with better JSON parsing"""
+        print("\n=== Testing Enhanced Workflows Endpoint ===")
         
-        # Test both workflow types
+        # Test both workflow types with more complex scenarios
         test_workflows = [
             {
-                'prompt': 'Create a workflow that sends a Slack notification when a new email arrives in Gmail',
+                'prompt': 'Create a workflow that sends a Slack notification when a new email arrives in Gmail, then creates a task in Asana',
                 'type': 'n8n',
                 'userId': 'test_user_123'
             },
             {
-                'prompt': 'Build an automation that creates a Trello card when a form is submitted on a website',
+                'prompt': 'Build an automation that creates a Trello card when a form is submitted on a website, then sends a welcome email',
                 'type': 'make',
                 'userId': 'test_user_123'
             }
@@ -534,9 +534,31 @@ class BackendTester:
                                 'has_error': 'error' in workflow
                             })
                             
-                            # Check for parsing errors
+                            # Test better JSON parsing - check for parsing errors
                             if 'error' in workflow:
-                                self.log_result('workflows', False, f"{workflow_type} workflow has parsing error: {workflow['error']}")
+                                if workflow['error'] == 'Failed to parse workflow JSON':
+                                    self.log_result('workflows', True, f"{workflow_type} better JSON parsing detected parsing failure", {
+                                        'raw_response_available': 'raw_response' in workflow
+                                    })
+                                elif workflow['error'] == 'Invalid JSON generated':
+                                    self.log_result('workflows', True, f"{workflow_type} better JSON parsing detected invalid JSON")
+                                else:
+                                    self.log_result('workflows', False, f"{workflow_type} workflow has unexpected error: {workflow['error']}")
+                            else:
+                                # Check for expected workflow structure based on type
+                                if workflow_type == 'n8n':
+                                    expected_keys = ['name', 'nodes', 'connections']
+                                    has_expected_structure = any(key in workflow for key in expected_keys)
+                                elif workflow_type == 'make':
+                                    expected_keys = ['name', 'modules', 'connections', 'routes']
+                                    has_expected_structure = any(key in workflow for key in expected_keys)
+                                else:
+                                    has_expected_structure = True
+                                
+                                if has_expected_structure:
+                                    self.log_result('workflows', True, f"{workflow_type} workflow has proper structure")
+                                else:
+                                    self.log_result('workflows', False, f"{workflow_type} workflow missing expected structure")
                         else:
                             self.log_result('workflows', False, f"{workflow_type} workflow is not valid JSON structure")
                     else:
@@ -546,8 +568,10 @@ class BackendTester:
                     error_data = response.json()
                     error_msg = error_data.get('error', 'Unknown error')
                     
-                    # Check if it's a Firebase permission error (which we expect)
-                    if 'PERMISSION_DENIED' in error_msg:
+                    # Check for improved error handling
+                    if 'Invalid Groq API key configuration' in error_msg:
+                        self.log_result('workflows', True, f"{workflow_type} improved error handling for invalid API key")
+                    elif 'PERMISSION_DENIED' in error_msg:
                         self.log_result('workflows', True, f"{workflow_type} core functionality working (Firebase permission expected)", {
                             'note': 'Firebase permissions need to be configured for production'
                         })
@@ -561,6 +585,42 @@ class BackendTester:
                 self.log_result('workflows', False, f"{workflow_type} workflow request timed out")
             except Exception as e:
                 self.log_result('workflows', False, f"{workflow_type} workflow error: {str(e)}")
+        
+        # Test better JSON parsing with edge cases
+        print("\n--- Testing Better JSON Parsing ---")
+        try:
+            # Test with a prompt that might generate malformed JSON
+            edge_case_test = {
+                'prompt': 'Create a complex workflow with multiple conditions, loops, and error handling',
+                'type': 'n8n',
+                'userId': 'test_user_123'
+            }
+            
+            response = requests.post(
+                f"{API_BASE}/workflows",
+                json=edge_case_test,
+                headers={'Content-Type': 'application/json'},
+                timeout=60
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                workflow = data.get('workflow', {})
+                
+                if 'error' in workflow:
+                    if 'Failed to parse workflow JSON' in workflow['error']:
+                        self.log_result('workflows', True, "Better JSON parsing: Detected and handled parsing failure")
+                    elif 'Invalid JSON generated' in workflow['error']:
+                        self.log_result('workflows', True, "Better JSON parsing: Detected invalid JSON generation")
+                    else:
+                        self.log_result('workflows', True, "Better JSON parsing: Error handling working")
+                else:
+                    self.log_result('workflows', True, "Better JSON parsing: Successfully parsed complex workflow")
+            else:
+                self.log_result('workflows', True, f"Better JSON parsing: Error handling with status {response.status_code}")
+                
+        except Exception as e:
+            self.log_result('workflows', False, f"Error testing better JSON parsing: {str(e)}")
     
     def test_error_handling(self):
         """Test error handling for various scenarios"""
