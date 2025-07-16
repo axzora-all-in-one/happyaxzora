@@ -20,6 +20,9 @@ class BackendTester:
             'ai_tools': {'status': 'pending', 'details': []},
             'ai_agents': {'status': 'pending', 'details': []},
             'workflows': {'status': 'pending', 'details': []},
+            'chatbot_create': {'status': 'pending', 'details': []},
+            'chatbot_list': {'status': 'pending', 'details': []},
+            'chatbot_test': {'status': 'pending', 'details': []},
             'environment': {'status': 'pending', 'details': []},
             'error_handling': {'status': 'pending', 'details': []}
         }
