@@ -226,8 +226,8 @@ const aiAgents = [
 ]
 
 export default function App() {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState({ uid: 'demo_user', phoneNumber: '+1234567890' }) // Mock user for demo
+  const [loading, setLoading] = useState(false) // Skip loading state
   const [aiTools, setAiTools] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedAgent, setSelectedAgent] = useState(null)
@@ -241,18 +241,9 @@ export default function App() {
   const [toolsLoading, setToolsLoading] = useState(false)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user)
-      setLoading(false)
-    })
-    return () => unsubscribe()
+    // Skip auth state changes for demo
+    fetchAiTools()
   }, [])
-
-  useEffect(() => {
-    if (user) {
-      fetchAiTools()
-    }
-  }, [user])
 
   const fetchAiTools = async () => {
     setToolsLoading(true)
@@ -332,12 +323,8 @@ export default function App() {
   }
 
   const handleSignOut = async () => {
-    try {
-      await auth.signOut()
-      toast.success('Signed out successfully')
-    } catch (error) {
-      toast.error('Failed to sign out')
-    }
+    // Mock signout - just show a message
+    toast.success('Demo mode - authentication disabled')
   }
 
   const filteredTools = aiTools.filter(tool => 
@@ -353,29 +340,7 @@ export default function App() {
     )
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <Sparkles className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-                HappyAxzora
-              </h1>
-            </div>
-            <CardDescription>
-              Discover AI tools, generate workflows, and access powerful AI agents
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PhoneAuth />
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
+  // Always show main content - authentication temporarily disabled
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -389,12 +354,15 @@ export default function App() {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
+              <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-700">
+                Demo Mode
+              </Badge>
               <div className="flex items-center space-x-2">
                 <User className="h-5 w-5" />
-                <span className="text-sm">{user.phoneNumber}</span>
+                <span className="text-sm">Demo User</span>
               </div>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4" />
+                <Settings className="h-4 w-4" />
               </Button>
             </div>
           </div>
