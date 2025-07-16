@@ -446,7 +446,7 @@ export default function App() {
                 {groupedTools.today.length > 0 && (
                   <div>
                     <div className="flex items-center mb-6">
-                      <Fire className="h-6 w-6 text-red-500 mr-2" />
+                      <Flame className="h-6 w-6 text-red-500 mr-2" />
                       <h3 className="text-2xl font-bold text-gray-900">Today's Latest</h3>
                       <Badge className="ml-3 bg-red-100 text-red-700">
                         {groupedTools.today.length}
