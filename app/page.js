@@ -378,7 +378,7 @@ export default function App() {
           </p>
           <div className="flex items-center justify-center space-x-4">
             <Badge className="bg-orange-100 text-orange-700 px-4 py-2">
-              <Fire className="h-4 w-4 mr-2" />
+              <Flame className="h-4 w-4 mr-2" />
               50+ AI Tools
             </Badge>
             <Badge className="bg-blue-100 text-blue-700 px-4 py-2">
